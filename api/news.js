@@ -44,12 +44,12 @@ function send(res, articles, provider) {
 }
 
 async function fetchGNews(apiKey) {
-  var categories = ['general', 'world', 'technology'];
+  var categories = ['general', 'world', 'technology', 'business'];
   var batches = await Promise.all(
     categories.map(function (category) {
       var url =
         'https://gnews.io/api/v4/top-headlines?category=' + category +
-        '&lang=en&country=us&max=10&apikey=' + encodeURIComponent(apiKey);
+        '&lang=en&max=10&apikey=' + encodeURIComponent(apiKey);
       return fetch(url).then(function (r) {
         if (!r.ok) return [];
         return r.json();

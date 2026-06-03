@@ -18,6 +18,8 @@
   var articleListEl = document.getElementById('article-list');
   var feedMetaEl = document.getElementById('feed-meta');
   var statusBarEl = document.getElementById('status-bar');
+  var articleHeroEl = document.getElementById('article-hero');
+  var articleImageEl = document.getElementById('article-image');
   var articleTitleEl = document.getElementById('article-title');
   var articleSourceEl = document.getElementById('article-source');
   var articleTimeEl = document.getElementById('article-time');
@@ -31,6 +33,13 @@
   var articleMode = false;
   var lastFocusedControl = null;
   var loading = false;
+
+  function esc(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/"/g, '&quot;');
+  }
 
   function loadReadSet() {
     try {
@@ -108,6 +117,14 @@
     statusBarEl.classList.toggle('error', !!isError);
   }
 
+  function thumbHtml(article) {
+    if (article.image) {
+      return '<span class="article-thumb-wrap"><img class="article-thumb" src="' +
+        esc(article.image) + '" alt="" loading="lazy"></span>';
+    }
+    return '<span class="article-thumb-placeholder" aria-hidden="true"></span>';
+  }
+
   function fetchFromUrl(url) {
     return fetch(url).then(function (r) {
       if (!r.ok) throw new Error('fail');
@@ -148,7 +165,8 @@
                 summary: item.url ? 'Source: ' + item.url : 'Hacker News discussion.',
                 source: 'HN',
                 pubDate: item.time ? new Date(item.time * 1000).toISOString() : '',
-                ts: item.time ? item.time * 1000 : 0
+                ts: item.time ? item.time * 1000 : 0,
+                image: ''
               };
             });
         }));
@@ -160,17 +178,16 @@
     loading = true;
     setStatus('Loading headlines…');
 
-    var loader = fetchNewsApi().catch(function () {
+    fetchNewsApi().catch(function () {
+      feedProvider = 'HN';
       return fetchHackerNews();
-    });
-
-    loader.then(function (items) {
+    }).then(function (items) {
       articles = items.filter(function (a) { return a && a.title; });
       if (!articles.length) throw new Error('empty');
       if (selectedIndex >= articles.length) selectedIndex = 0;
       renderArticleList();
       setStatus(feedProvider + ' · ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      feedMetaEl.textContent = String(articles.length).padStart(2, '0') + ' stories';
+      feedMetaEl.textContent = String(articles.length).padStart(2, '0');
     }).catch(function () {
       setStatus('Could not load news', true);
       feedMetaEl.textContent = '--';
@@ -198,14 +215,12 @@
       btn.dataset.action = 'open-article';
 
       btn.innerHTML =
-        '<span class="article-index">' + String(index + 1).padStart(2, '0') + '</span>' +
-        (article.image
-          ? '<span class="article-thumb-wrap"><img class="article-thumb" src="' + article.image + '" alt=""></span>'
-          : '<span class="article-thumb-placeholder" aria-hidden="true"></span>') +
+        thumbHtml(article) +
         '<div class="article-info">' +
-          '<div class="article-headline">' + article.title + '</div>' +
-          '<div class="article-meta">' + article.source +
-            (article.pubDate ? ' · ' + timeAgo(article.pubDate) : '') +
+          '<span class="source-pill-sm">' + esc(article.source) + '</span>' +
+          '<div class="article-headline">' + esc(article.title) + '</div>' +
+          '<div class="article-meta">' +
+            (article.pubDate ? timeAgo(article.pubDate) : '') +
           '</div>' +
         '</div>';
 
@@ -216,10 +231,9 @@
   function updateSelection(index) {
     selectedIndex = index;
     saveLastIndex(index);
+    renderArticleList();
     var items = articleListEl.querySelectorAll('.article-item');
-    items.forEach(function (item, i) {
-      item.classList.toggle('selected', i === index);
-    });
+    if (items[index]) items[index].focus();
   }
 
   function showScreen(name) {
@@ -228,20 +242,33 @@
     articleMode = name === 'article';
   }
 
+  function setArticleHero(image) {
+    if (image) {
+      articleHeroEl.classList.remove('no-image');
+      articleImageEl.classList.remove('hidden');
+      articleImageEl.src = image;
+    } else {
+      articleHeroEl.classList.add('no-image');
+      articleImageEl.classList.add('hidden');
+      articleImageEl.removeAttribute('src');
+    }
+  }
+
   function openArticle(index, triggerEl) {
     rememberFocus(triggerEl || document.activeElement);
     currentIndex = index;
     selectedIndex = index;
-    updateSelection(index);
+    saveLastIndex(index);
 
     var article = articles[index];
+    setArticleHero(article.image || '');
     articleSourceEl.textContent = article.source;
     articleTitleEl.textContent = article.title;
     articleTimeEl.textContent = article.pubDate ? timeAgo(article.pubDate) : '';
     articleSummaryEl.textContent = article.summary || 'No summary available.';
 
     showScreen('article');
-    readBtn.focus();
+    document.querySelector('.article-back').focus();
   }
 
   function goBack() {
@@ -301,7 +328,6 @@
           openArticle(idx, target);
         } else {
           updateSelection(idx);
-          target.focus();
         }
         break;
       }
@@ -357,5 +383,5 @@
   selectedIndex = loadLastIndex();
   loadArticles(false);
   showScreen('feed');
-  setTimeout(restoreFocus, 100);
+  setTimeout(restoreFocus, 150);
 })();
