@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
+  <title>Brief</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="icon-96.png" sizes="96x96">
+</head>
+<body>
+  <div id="app">
+
+    <section id="feed" class="screen">
+      <header class="header">
+        <div class="header-brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <h1>Brief</h1>
+        </div>
+        <span class="header-meta" id="feed-meta">···</span>
+      </header>
+
+      <div class="status-bar" id="status-bar">Loading headlines…</div>
+
+      <div class="content" id="article-list" role="list"></div>
+
+      <nav class="nav-bar">
+        <button class="nav-item focusable symbol" data-action="refresh" tabindex="0" id="refresh-btn" aria-label="Refresh">&#8635;</button>
+      </nav>
+    </section>
+
+    <section id="article-screen" class="screen hidden">
+      <header class="header">
+        <button class="back-btn focusable symbol" data-action="back" tabindex="0" aria-label="Back">&#8592;</button>
+        <h1 id="article-source">Source</h1>
+      </header>
+
+      <div class="article-body">
+        <h2 id="article-title">Headline</h2>
+        <p class="article-time" id="article-time"></p>
+        <p class="article-summary" id="article-summary"></p>
+      </div>
+
+      <nav class="nav-bar">
+        <button class="nav-item primary focusable symbol" data-action="mark-read" tabindex="0" id="read-btn" aria-label="Mark read">&#10003;</button>
+      </nav>
+    </section>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
