@@ -25,6 +25,7 @@
   var readBtn = document.getElementById('read-btn');
 
   var articles = [];
+  var feedProvider = '';
   var selectedIndex = 0;
   var currentIndex = 0;
   var articleMode = false;
@@ -107,11 +108,28 @@
     statusBarEl.classList.toggle('error', !!isError);
   }
 
-  function fetchNewsApi() {
-    return fetch('/api/news').then(function (r) {
-      if (!r.ok) throw new Error('api');
+  function fetchFromUrl(url) {
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error('fail');
       return r.json();
-    }).then(function (data) {
+    });
+  }
+
+  function fetchNewsApi() {
+    var endpoints = ['/api/news'];
+    if (window.location.hostname.indexOf('github.io') !== -1) {
+      endpoints.push('https://brief-mrbd.vercel.app/api/news');
+    }
+
+    function tryNext(i) {
+      if (i >= endpoints.length) return Promise.reject(new Error('no api'));
+      return fetchFromUrl(endpoints[i]).catch(function () {
+        return tryNext(i + 1);
+      });
+    }
+
+    return tryNext(0).then(function (data) {
+      feedProvider = data.provider || 'News';
       return data.articles || [];
     });
   }
@@ -151,7 +169,7 @@
       if (!articles.length) throw new Error('empty');
       if (selectedIndex >= articles.length) selectedIndex = 0;
       renderArticleList();
-      setStatus('Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      setStatus(feedProvider + ' · ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       feedMetaEl.textContent = String(articles.length).padStart(2, '0') + ' stories';
     }).catch(function () {
       setStatus('Could not load news', true);
@@ -181,6 +199,9 @@
 
       btn.innerHTML =
         '<span class="article-index">' + String(index + 1).padStart(2, '0') + '</span>' +
+        (article.image
+          ? '<span class="article-thumb-wrap"><img class="article-thumb" src="' + article.image + '" alt=""></span>'
+          : '<span class="article-thumb-placeholder" aria-hidden="true"></span>') +
         '<div class="article-info">' +
           '<div class="article-headline">' + article.title + '</div>' +
           '<div class="article-meta">' + article.source +
